@@ -12,6 +12,17 @@ Another feature that GraalVM adds to the JDK is **Embedding other languages**. W
 
 Now the last but not least is GraalVM's **Native Image**, which enables compiling Java applications ahead of time into small and fast native executables. This our main topic for today — let's dive in.
 
+# Meet GraalVM Native Image
+
+so what is Native Image and how does it work exactly? Native Image is a feature in GraalVM that employs the Graal compiler to ahead of time compile your Java application into a native executable. The main reason to do so is to shift all the work that the JVM normally does at run time, such as loading classes, profiling, and compilation, to the build time, to remove that overhead when you run your application. In addition to AOT compilation, Native Image performs another important task: it takes a snapshot of your heap with objects that are safe to initialize at build time, to reduce the allocation overhead as well. As the artifact it produces a native executable with the following advantages:
+
+* Fast startup
+* Low memory footprint
+* Peak performance on par with the JVM
+* Compact packaging
+* Additional security.
+
+
 # Build a Native Spring Application
 
 ```mvn -Pnative native:compile```
