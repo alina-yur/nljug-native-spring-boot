@@ -1,6 +1,6 @@
 Hello, NL JUG!👋
 
-We've done a few talks about GraalVM at JFall and JSpring before, so hopefully GraalVM is not entirely new to you, but I'm also very excited about this opportunity to talk with you in writing about GraalVM, Spring Boot, how they are even more awesome together, and why you should care.
+I'm very excited about this opportunity to talk with you in writing about GraalVM, Spring Boot, how they are even more awesome together, and why you should care. Let's go!
 
 # What is GraalVM and why GraalVM
 
@@ -16,14 +16,51 @@ Now the last but not least is GraalVM's **Native Image**, which enables compilin
 
 so what is Native Image and how does it work exactly? Native Image is a feature in GraalVM that employs the Graal compiler to ahead of time compile your Java application into a native executable. The main reason to do so is to shift all the work that the JVM normally does at run time, such as loading classes, profiling, and compilation, to the build time, to remove that overhead when you run your application. In addition to AOT compilation, Native Image performs another important task: it takes a snapshot of your heap with objects that are safe to initialize at build time, to reduce the allocation overhead as well. As the artifact it produces a native executable with the following advantages:
 
-* Fast startup
-* Low memory footprint
-* Peak performance on par with the JVM
-* Compact packaging
-* Additional security.
+* Fast startup and instant performance, as the native executable doesn't need to warm up;
+* Low memory footprint, as we don't need to profile and compile code at runtime;
+* Peak performance on par with the JVM;
+* Compact packaging;
+* Additional security, as we eliminate unused code and reduce the attack surface,
 
 
 # Build a Native Spring Application
+
+Let's go to Josh Long's second favorite place — start.spring.io – and generate our project. The settings I chose are Java 22, Maven, and my dependencies are Spring Web and GraalVM Native Image. That's all. Let's download and unpack our project, and add a `HelloController.java` so we have something to work with:
+
+```java
+package com.example.demo;
+
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@RestController
+public class HelloController {
+
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello from GraalVM and Spring!💃";
+    }
+    
+}
+```
+Guess what — we would also need GraalVM. The easiest way to install it with SDKMAN!. As I'm writing this article the latest released version is GraalVM for JDK 22, but we can also be cool and get the early access builds of GraalVM for JDK 23:
+
+```shell
+sdk install java 23.ea.9-graal
+
+```
+
+Now we are all set!
+
+Remember GraalVM is a normal JDK, right? You can run your application as you would on any other JDK:
+
+```shell
+mvn spring-boot:run
+...
+Tomcat started on port 8080 (http) with context path '/'
+Started DemoApplication in 1.14 seconds (process running for 1.393)
+```
+
 
 ```mvn -Pnative native:compile```
 
@@ -192,6 +229,6 @@ You'll see that our application successfully operates and uses minimal resources
 You can go even further and repeat the experiment but limiting the memory to let's say ridiculous 10 MB and the app will remain operational:
 
 ```shell
-./target/demo-monitored -Xmx=10M
+./target/demo-monitored -Xmx10M
 hey -n=100000 http://localhost:8080/hello
 ```
