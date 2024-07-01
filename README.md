@@ -25,7 +25,7 @@ so what is Native Image and how does it work exactly? Native Image is a feature 
 
 # Build a Native Spring Application
 
-Let's go to Josh Long's second favorite place — start.spring.io – and generate our project. The settings I chose are Java 22, Maven, and my dependencies are Spring Web and GraalVM Native Image. That's all. Let's download and unpack our project, and add a `HelloController.java` so we have something to work with:
+Let's go to Josh Long's second favorite place — start.spring.io – and generate our project. The settings I chose are Spring Boot 3.3.1, Java 22, Maven, and my dependencies are Spring Web and GraalVM Native Image. That's all. Let's download and unpack our project, and add a `HelloController.java` so we have something to work with:
 
 ```java
 package com.example.demo;
@@ -58,11 +58,16 @@ Remember GraalVM is a normal JDK, right? You can run your application as you wou
 mvn spring-boot:run
 ...
 Tomcat started on port 8080 (http) with context path '/'
-Started DemoApplication in 1.14 seconds (process running for 1.393)
+Started DemoApplication in 1.106 seconds (process running for 1.363)
 ```
 
+Navigate to `http://localhost:8080/hello` and you'll see our message. 
+
+So far so good, but where's fun in that! Let's compile it to native executable with GraalVM Native Image:
 
 ```mvn -Pnative native:compile```
+
+On my pretty average Linux cloud instance (16 COU, 32 GB RAM) the build takes 1m 15s by default, and 
 
 It's a standard native compilation command that would work on any Spring Boot app with GraalVM Native Image support enabled as a dependency.
 
