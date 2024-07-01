@@ -84,15 +84,19 @@ While this command looks simple on the surface, it invokes an elaborate process 
    89,842 reachable methods (64.9% of  138,456 total)
 ```
 
-On my pretty average Linux cloud instance (16 COU, 32 GB RAM) the build takes 1m 15s by default, and 46.7s with the quick build mode (`-Ob`). We can also quickly assess the runtime characteristics of our application. The size of our application is 62MB,  
+On my pretty average Linux cloud instance (16 COU, 32 GB RAM) the build takes 1m 15s by default, and 46.7s with the quick build mode (`-Ob`). 
 
-Now that we have our base application, let's understand better how it works behind the scenes, so we can build out our project.
+We can also quickly assess the runtime characteristics of our application. The size of our application is 62MB, and measuring the runtime memory usage (RSS) without any tweaking and serving incoming requests load gives us 69 MB. Not bad, right?
+
+But let's do performance benchmarking, and for that let's talk performance.
 
 # Optimize performance
 
+You might say: ok, I can see how compiling things AOT is great for startup, memory usage, packaging size, but what about peak performance and famous JVM profiling and dynamic code execution? Indeed, we all know that the JVM profiles our application and adapts on the go to better invest optimization efforts into the parts of the application that are most frequently executed. And we said about Native Image compilation that runtime hasn't happened yet, so how can you reach high peak performance? I'm glad you asked! Let's talk about profile-guided optimizations
+
 ## PGO 🚀
 
-One of the most powerful performance optimizations in Native Image is profile-guided optimizations (PGO).
+One of the most powerful performance optimizations in Native Image is profile-guided optimizations (PGO). You can build an instrumented version of your application, do a "training run" applying relevant workloads, and this will generate a profiles file that will be automatically picked up by Native Image to guide optimizations. This way you can combine the best of both worlds: the runtime awareness of the JVM, and the powerful AOT optimizations of Native Image. Your application performance wil depend on the quality of profiles, but with good profiles it's possible to reach peak performance on par with the JVM.
 
 1. Build an instrumented image: 
 
