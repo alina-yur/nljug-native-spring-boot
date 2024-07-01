@@ -20,7 +20,15 @@ so what is Native Image and how does it work exactly? Native Image is a feature 
 * Low memory footprint, as we don't need to profile and compile code at runtime;
 * Peak performance on par with the JVM;
 * Compact packaging;
-* Additional security, as we eliminate unused code and reduce the attack surface,
+* Additional security, as we eliminate unused code and reduce the attack surface.
+
+ # Spring AOT: Spring meets GraalVM 🤝
+
+By default Spring Boot works in a way that at runtime it pulls your projects source code and configuration from all the different sources, resolves it, and and creates an internal representation of your app. What's interesting, GraalVM Native Image does a very similar thing – analyzes incoming code and configuration and creates an internal representation of your app – but it does so at build time. The Spring AOT engine was designed to bridge this gap between two worlds. It transforms your application configuration into native-friendly functional configuration and generates additional files to assist native compilation of Spring projects: 
+
+* Java source code (functional configuration)
+* Bytecode for things like dynamic proxies
+* Runtime hints for dynamic Java features when necessary (reflection, resources, etc). 
 
 
 # Build a Native Spring Application
@@ -67,38 +75,18 @@ So far so good, but where's fun in that! Let's compile it to native executable w
 
 ```mvn -Pnative native:compile```
 
-On my pretty average Linux cloud instance (16 COU, 32 GB RAM) the build takes 1m 15s by default, and 
+While this command looks simple on the surface, it invokes an elaborate process of analyzing your whole applications, pulling the configuration, finding the code that is reachable, snapshotting heap, and then optimizing and compiling. Look at the analysis step — even our fairly trivial app with two user classes (albeit also dependencies on Spring modules and JDK classes), has quite a few things inside:
 
-It's a standard native compilation command that would work on any Spring Boot app with GraalVM Native Image support enabled as a dependency.
-
-# Spring Boot AOT Engine and GraalVM
-
-By default, at runtime Spring pulls your app configuration from different sources, and creates an internal representation of your app. What's interesting, GraalVM Native Image does a similar thing – analyzes input and creates an internal representation of your app – but at build time. The Spring AOT engine bridges this gap between two worlds. It does two things: one is transforming your app configuration into native-friendly functional configuration. It also generates three kinds of input for Native Image:
-
-* Java source code (functional configuration)
-* Bytecode for things like dynamic proxies
-* Runtime hints for dynamic Java features (reflection, resources, etc). 
-
-
-# Dev Mode
-
-For development purposes, you can speed up native builds by passing the `-Ob` flag: either via the command line, or in the Native Maven plugin:
-
-```xml
-<plugin>
-  <groupId>org.graalvm.buildtools</groupId>
-      <artifactId>native-maven-plugin</artifactId>
-          <configuration>
-              <buildArgs>
-                  <buildArg>-Ob</buildArg>
-              </buildArgs>
-            </configuration>
-</plugin>
+```shell
+[2/8] Performing analysis...  [*****]                                   (15.0s @ 1.53GB)
+   16,960 reachable types   (89.4% of   18,971 total)
+   26,038 reachable fields  (59.2% of   44,015 total)
+   89,842 reachable methods (64.9% of  138,456 total)
 ```
 
-This will speed up the compilation phase, and therefore the overall build time will be ~15-20% faster.
+On my pretty average Linux cloud instance (16 COU, 32 GB RAM) the build takes 1m 15s by default, and 46.7s with the quick build mode (`-Ob`). We can also quickly assess the runtime characteristics of our application. The size of our application is 62MB,  
 
-This is intended as a dev mode, make sure to remove the flag before deploying to production to get the best performance.
+Now that we have our base application, let's understand better how it works behind the scenes, so we can build out our project.
 
 # Optimize performance
 
@@ -169,6 +157,8 @@ Native testing recommendation: you don't need to test in the mode all the time, 
 
 # Using libraries
 
+But why do we need this extra step? Native Image compiles applications ahead of time, meaning that runtime hasn't happened yet. Since we need a complete picture of the app, compilation happens under a closed-world assumption: everything there is to know about your app, **needs to be known at build time**. Native Image's static analysis will try to make the best possible predictions about the runtime behavior of your application, but for those cases where it's not sufficient, you might need to provide configuration files to make things like reflection, resources, JNI, serialization, and proxies "visible" to Native Image. Note the word "configuration" doesn't mean that this is something that you need to do manually – let's look at all the many ways how this can just work.
+
 When using libraries in native mode, some things such as reflection, resources, proxies might have to be made "visible" to Native Image at build time via configuration. Now the word "configuration" doesn't mean that this is something that you need to do manually as a user – let's look at all the many ways how this can just work.
 
 * Ideally, a library would include the necessary config files. Example: [H2](https://github.com/h2database/h2database/blob/master/h2/src/main/META-INF/native-image/reflect-config.json), [OCI Java SDK](https://github.com/oracle/oci-java-sdk/blob/master/bmc-adm/src/main/resources/META-INF/native-image/com.oracle.oci.sdk/oci-java-sdk-adm/reflect-config.json). In this case no further action needed from a user – things just work.
@@ -237,3 +227,8 @@ You can go even further and repeat the experiment but limiting the memory to let
 ./target/demo-monitored -Xmx10M
 hey -n=100000 http://localhost:8080/hello
 ```
+
+# What's next for GraalVM
+
+Native Image Layers
+GraalOS
