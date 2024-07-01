@@ -114,6 +114,17 @@ after you shut down the app, you'll see an `iprof` file in your working director
 
 ```mvn -Pnative,optimized native:compile```
 
+## Benchmarking results
+
+JVM
+Warmup run: 45266.7751 requests/sec
+Benchmarking run: 51840.9236 requests/sec
+
+Native Image
+
+Warmup run: 50167.0774 requests/sec
+Benchmarking run: 49779.2698 requests/sec
+
 
 ## ML-enabled PGO 👩‍🔬
 
