@@ -245,5 +245,8 @@ hey -n=100000 http://localhost:8080/hello
 
 # What's next for GraalVM
 
-Native Image Layers
+## Native Image Layers
+
+We want to introduce a brand new way of building and deploying Native Image applications. With Layers you'll be able to create native images that depend on one or more base images. Such application images are much faster to build compared with standalone images, providing an improved development experience. Moreover, base images can be shared not just across applications but potentially also across different operating system processes, which can reduce the overall memory footprint.
+
 GraalOS
