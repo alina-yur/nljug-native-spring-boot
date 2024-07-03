@@ -114,16 +114,6 @@ after you shut down the app, you'll see an `iprof` file in your working director
 
 ```mvn -Pnative,optimized native:compile```
 
-## Benchmarking results
-
-JVM
-Warmup run: 45266.7751 requests/sec
-Benchmarking run: 51840.9236 requests/sec
-
-Native Image
-
-Warmup run: 50167.0774 requests/sec
-Benchmarking run: 49779.2698 requests/sec
 
 
 ## ML-enabled PGO 👩‍🔬
@@ -158,6 +148,21 @@ There are several levels of optimizations in Native Image, that can be set at bu
 - `-Ob` - Optimize for fastest build time: use only for dev purposes for faster feedback, remove before compiling for deployment;
 
 - `-pgo`: Using PGO will automatically trigger `-O3` for best performance.
+
+
+## Performance comparison
+
+Let's run our application on the 
+
+
+JVM
+Warmup run: 45266.7751 requests/sec
+Benchmarking run: 51840.9236 requests/sec
+
+Native Image
+
+Warmup run: 50167.0774 requests/sec
+Benchmarking run: 49779.2698 requests/sec
 
 
 # Testing 🧪
