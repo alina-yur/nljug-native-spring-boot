@@ -92,11 +92,14 @@ But let's do performance benchmarking, and for that let's talk performance.
 
 # Optimize performance
 
-You might say: ok, I can see how compiling things AOT is great for startup, memory usage, packaging size, but what about peak performance and famous JVM profiling and dynamic code execution? Indeed, we all know that the JVM profiles our application and adapts on the go to better invest optimization efforts into the parts of the application that are most frequently executed. And we said about Native Image compilation that runtime hasn't happened yet, so how can you reach high peak performance? I'm glad you asked! Let's talk about profile-guided optimizations
+You might say: ok, I can see how compiling things AOT is great for startup, memory usage, packaging size, but what about peak performance and famous JVM profiling and dynamic code execution? Indeed, we all know that the JVM profiles our application and adapts on the go to better invest optimization efforts into the parts of the application that are most frequently executed. And we said about Native Image compilation that runtime hasn't happened yet, so how can you reach high peak performance? I'm glad you asked! Let's talk about profile-guided optimizations.
 
 ## PGO 🚀
 
 One of the most powerful performance optimizations in Native Image is profile-guided optimizations (PGO). You can build an instrumented version of your application, do a "training run" applying relevant workloads, and this will generate a profiles file that will be automatically picked up by Native Image to guide optimizations. This way you can combine the best of both worlds: the runtime awareness of the JVM, and the powerful AOT optimizations of Native Image. Your application performance wil depend on the quality of profiles, but with good profiles it's possible to reach peak performance on par with the JVM.
+
+
+Let's build a PGO-optimized image. To follow along, you might to want to clone the related repo, as it comes with profiles and benchmarking scripts: https://github.com/alina-yur/nljug-native-spring-boot.
 
 1. Build an instrumented image: 
 
@@ -114,23 +117,16 @@ after you shut down the app, you'll see an `iprof` file in your working director
 
 ```mvn -Pnative,optimized native:compile```
 
-## Benchmarking results
+This will give you `demo-optimized`, that is aware of the application behavior at runtime and has a better performance.
 
-JVM
-Warmup run: 45266.7751 requests/sec
-Benchmarking run: 51840.9236 requests/sec
-
-Native Image
-
-Warmup run: 50167.0774 requests/sec
-Benchmarking run: 49779.2698 requests/sec
+Let's look at other performance optimizations available in GraalVM Native Image, and then do performance benchmarking.
 
 
 ## ML-enabled PGO 👩‍🔬
 
-The PGO approach described above, where the profiles are customly collected and tailored for your app, is the recommended way to do PGO in Native Image. 
+The PGO approach described above, where the profiles are collected during a training run and tailored to your app, is the recommended way to do PGO in Native Image. 
 
-There can be situations though when collecting profiles is not possible – for example, because of your deployment model or other reasons. In that case, it's still possible to get profiling information and optimize the app based on it via ML-enabled PGO. Native Image contains a pre-trained ML model that predicts the probabilities of the control flow graph branches, which lets us additionally optimize the app. This is again available in Oracle GraalVM and you don't need to enable it – it kicks in automatically  in the absence of custom profiles. 
+There can be situations though when collecting profiles is not possible – for example, because of your deployment process. In that case, it's still possible to get profiling information and optimize the app based on it via machine learning enabled PGO. Native Image contains a pre-trained ML model that predicts the probabilities of the control flow graph branches, which lets us additionally optimize the app. This is again available in Oracle GraalVM and you don't need to enable it – it kicks in automatically  in the absence of user-provided profiles. 
 
 If you are curious about the impact if this optimization, you can disable it with `-H:-MLProfileInference`. In our measurements, this optimization provides ~6% runtime performance improvement, which is pretty cool for an optimization you automatically get out of the box.
 
@@ -145,7 +141,7 @@ In our `optimized` profile it's enabled via `<buildArg>--gc=G1</buildArg>`.
 
 ## Optimization levels in Native Image
 
-There are several levels of optimizations in Native Image, that can be set at build time:
+There are several levels of optimizations in Native Image, that can be set at build time for different purposes:
 
 - `-O0` - No optimizations: Recommended optimization level for debugging native images;
 
@@ -159,6 +155,33 @@ There are several levels of optimizations in Native Image, that can be set at bu
 
 - `-pgo`: Using PGO will automatically trigger `-O3` for best performance.
 
+
+## `march=native`
+
+
+ If you are deploying your application on the same machine where you building it, or a similar machine with support for the same CPU features, use `-march=native` for additional performance. This option allows the Graal compiler to use all CPU features available, which will improve the performance of your application. Note that if you are building your application to distribute it to your users or customers, where the machine configuration is unknown, it's better to use `-march=compatibility`.
+
+
+## Performance comparison
+
+Let's run our application on the JVM and Native Image, and compare the results. To benchmark the peak throughput, we will send 2 batches of 250000 requests (warmup run and benchmarking run) using hey
+
+
+JVM 512M
+Warmup run: 45266.7751 requests/sec
+Benchmarking run: 51840.9236 requests/sec
+Maximum resident set size (kbytes): 516772
+
+Native Image 512M
+
+Warmup run: 50167.0774 requests/sec
+Benchmarking run: 49779.2698 requests/sec
+Maximum resident set size (kbytes): 412316
+
+Native 256M
+Warmup run: 49834.8269 requests/sec
+Benchmarking run: 49568.0940 requests/sec
+Maximum resident set size (kbytes): 251476
 
 # Testing 🧪
 
@@ -183,29 +206,10 @@ For both of those options, a quick way to asses whether your dependencies work w
 ```java
 runtimeHints.resources().registerPattern(“config/app.properties”); //register a resource
 ```
-```java
-@Reflective //flag elements that require reflection
-```
+
 * You can use the Tracing Agent to produce the necessary config [automatically](https://www.graalvm.org/latest/reference-manual/native-image/metadata/AutomaticMetadataCollection/).
 * You can provide/extend config for reflection, JNI, resources, serialization, and predefined classes [manually in JSON](graalvm.org/latest/reference-manual/native-image/metadata/#specifying-metadata-with-json).
 
-
-# Configuring reflection, resources, proxies
-
-There is a way to automatically generate configuration files for Native Image. In our example, we have `ReflectionController`, which accesses a field in a different class at runtime, and `ResourceController`, which is reading `message.xml` at runtime. To make those calls visible and automatically resolved by Native Image, run the tracing agent:
-
-```shell
-java -agentlib:native-image-agent=config-output-dir=./resources/META-INF/native-image  -jar ./target/demo-0.0.1-SNAPSHOT.jar
-```
-
-As the app is running, access the corresponding endpoints (`http://localhost:8080/reflection`, `http://localhost:8080/resource`) to emulate relevant workload. The agent will observe those call, produce configuration files in `resources/META-INF/native-image`. As this is a known location, Native Image will pick up the config files automatically. Rebuild the app and access the endpoints to verify:
-
-```shell
-mvn -Pnative native:compile
-./target/demo
-http://localhost:8080/reflection
-http://localhost:8080/resource
-```
 
 # Monitoring 📈
 
@@ -245,5 +249,8 @@ hey -n=100000 http://localhost:8080/hello
 
 # What's next for GraalVM
 
-Native Image Layers
+## Native Image Layers
+
+We want to introduce a brand new way of building and deploying Native Image applications. With Layers you'll be able to create native images that depend on one or more base images. Such application images are much faster to build compared with standalone images, providing an improved development experience. Moreover, base images can be shared not just across applications but potentially also across different operating system processes, which can reduce the overall memory footprint.
+
 GraalOS
