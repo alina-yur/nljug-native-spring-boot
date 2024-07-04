@@ -167,21 +167,17 @@ There are several levels of optimizations in Native Image, that can be set at bu
 Let's run our application on the JVM and Native Image, and compare the results. To benchmark the peak throughput, we will send 2 batches of 250000 requests (warmup run and benchmarking run) using hey
 
 
-JVM 512M
-Warmup run: 45266.7751 requests/sec
-Benchmarking run: 51840.9236 requests/sec
-Maximum resident set size (kbytes): 516772
+JVM
+Warmup runs: 27606 - 48764 requests/sec
+Benchmarking run: 51822 requests/sec
+Maximum resident set size: 469.12 MB
 
-Native Image 512M
+Native Image
 
 Warmup run: 50167.0774 requests/sec
 Benchmarking run: 49779.2698 requests/sec
-Maximum resident set size (kbytes): 412316
+Maximum resident set size: 412.3 MB
 
-Native 256M
-Warmup run: 49834.8269 requests/sec
-Benchmarking run: 49568.0940 requests/sec
-Maximum resident set size (kbytes): 251476
 
 # Testing 🧪
 
