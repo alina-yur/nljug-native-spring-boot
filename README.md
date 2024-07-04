@@ -164,20 +164,30 @@ There are several levels of optimizations in Native Image, that can be set at bu
 
 ## Performance comparison
 
-Let's run our application on the JVM and Native Image, and compare the results. To benchmark the peak throughput, we will send 2 batches of 250000 requests (warmup run and benchmarking run) using hey
+Let's run our application on the JVM and Native Image, and compare the results. To benchmark the peak throughput, we will send 2 batches of 250000 requests (warmup run and benchmarking run) using `hey`. We'll also use `psrecord` to produce charts showing memory & CPU consumption.
+
+Run `bench-jit-c2.sh` and `bench-native.sh`. This is what I got:
 
 
-JVM
-Warmup runs: 27606 - 48764 requests/sec
-Benchmarking run: 51822 requests/sec
-Maximum resident set size: 469.12 MB
+The JVM
+Warmup run: 44866.35 requests/sec
+Benchmarking run: 51815.74 requests/sec
+Maximum resident set size: 496.27 MB
 
 Native Image
 
-Warmup run: 50167.0774 requests/sec
-Benchmarking run: 49779.2698 requests/sec
-Maximum resident set size: 412.3 MB
+Warmup run: 50281.82 requests/sec
+Benchmarking run: 50172.26 requests/sec
+Maximum resident set size: 404.67 MB
 
+And in a visual form:
+
+![Native Spring Boot metrics](native-sb-metrics-min.png "Native Spring web app memory and CPU usage")
+
+A few conclusions here:
+* Natively compiled applications can perform on par with the JVM — use PGO, G1 GC and `-march=native`;
+* Applications have instant performance and can also be scaled to zero whenever needed;
+* Native Image applications use signficantly less memory than the JVM. You can easily reduce memory by 2x and keep the same throughput, or deploy 2 instances of the app for the memory footprint of one.
 
 # Testing 🧪
 
