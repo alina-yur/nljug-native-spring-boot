@@ -92,11 +92,14 @@ But let's do performance benchmarking, and for that let's talk performance.
 
 # Optimize performance
 
-You might say: ok, I can see how compiling things AOT is great for startup, memory usage, packaging size, but what about peak performance and famous JVM profiling and dynamic code execution? Indeed, we all know that the JVM profiles our application and adapts on the go to better invest optimization efforts into the parts of the application that are most frequently executed. And we said about Native Image compilation that runtime hasn't happened yet, so how can you reach high peak performance? I'm glad you asked! Let's talk about profile-guided optimizations
+You might say: ok, I can see how compiling things AOT is great for startup, memory usage, packaging size, but what about peak performance and famous JVM profiling and dynamic code execution? Indeed, we all know that the JVM profiles our application and adapts on the go to better invest optimization efforts into the parts of the application that are most frequently executed. And we said about Native Image compilation that runtime hasn't happened yet, so how can you reach high peak performance? I'm glad you asked! Let's talk about profile-guided optimizations.
 
 ## PGO 🚀
 
 One of the most powerful performance optimizations in Native Image is profile-guided optimizations (PGO). You can build an instrumented version of your application, do a "training run" applying relevant workloads, and this will generate a profiles file that will be automatically picked up by Native Image to guide optimizations. This way you can combine the best of both worlds: the runtime awareness of the JVM, and the powerful AOT optimizations of Native Image. Your application performance wil depend on the quality of profiles, but with good profiles it's possible to reach peak performance on par with the JVM.
+
+
+Let's build a PGO-optimized image. To follow along, you might to want to clone the related repo, as it comes with profiles and benchmarking scripts: https://github.com/alina-yur/nljug-native-spring-boot.
 
 1. Build an instrumented image: 
 
@@ -161,18 +164,24 @@ There are several levels of optimizations in Native Image, that can be set at bu
 
 ## Performance comparison
 
-Let's run our application on the 
+Let's run our application on the JVM and Native Image, and compare the results. To benchmark the peak throughput, we will send 2 batches of 250000 requests (warmup run and benchmarking run) using hey
 
 
-JVM
+JVM 512M
 Warmup run: 45266.7751 requests/sec
 Benchmarking run: 51840.9236 requests/sec
+Maximum resident set size (kbytes): 516772
 
-Native Image
+Native Image 512M
 
 Warmup run: 50167.0774 requests/sec
 Benchmarking run: 49779.2698 requests/sec
+Maximum resident set size (kbytes): 412316
 
+Native 256M
+Warmup run: 49834.8269 requests/sec
+Benchmarking run: 49568.0940 requests/sec
+Maximum resident set size (kbytes): 251476
 
 # Testing 🧪
 
