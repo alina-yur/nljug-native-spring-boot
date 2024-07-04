@@ -19,6 +19,6 @@ hey -n=250000 -c=8 http://localhost:8080/hello
 print "Executing benchmark load"
 hey -n=250000 -c=8 http://localhost:8080/hello
 
-print "Native run done!🎉"
+print "Native run is done!🎉"
 kill $PID
 sleep 1

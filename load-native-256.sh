@@ -1,14 +1,14 @@
 set -e
 
 function print() {
-    printf "\033[1;34m$1\033[0m\n"
+    printf "\033[1;35m$1\033[0m\n"
 }
 
 print "Starting the app 🏎️"
 
-java -XX:-UseJVMCICompiler -Xmx512m -jar ./target/demo-0.0.1-SNAPSHOT.jar &
+./target/demo-optimized -Xmx256m &
+
 export PID=$!
-psrecord $PID --plot "$(date +%s)-jit-c2.png" --max-cpu 2200 --max-memory 900 --include-children &
 
 sleep 2
 print "Done waiting for startup..."
@@ -19,6 +19,7 @@ hey -n=250000 -c=8 http://localhost:8080/hello
 print "Executing benchmark load"
 hey -n=250000 -c=8 http://localhost:8080/hello
 
-print "JVM run is done!🎉"
+print "Native run is done!🎉"
+
 kill $PID
 sleep 1
