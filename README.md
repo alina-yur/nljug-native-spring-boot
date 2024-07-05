@@ -1,4 +1,4 @@
-Hello, NL JUG!👋
+Hello, Java Magazine!👋
 
 I'm very excited about this opportunity to talk with you in writing about GraalVM, Spring Boot, how they are even more awesome together, and why you should care. Let's go!
 
