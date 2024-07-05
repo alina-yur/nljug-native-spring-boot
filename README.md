@@ -19,7 +19,7 @@ so what is Native Image and how does it work exactly? Native Image is a feature 
 * Fast startup and instant performance, as the native executable doesn't need to warm up;
 * Low memory footprint, as we don't need to profile and compile code at runtime;
 * Peak performance on par with the JVM;
-* Compact packaging;
+* Compact packaging due to including only reachable code;
 * Additional security, as we eliminate unused code and reduce the attack surface.
 
  # Spring AOT: Spring meets GraalVM 🤝
@@ -209,8 +209,19 @@ When using libraries in native mode, some things such as reflection, resources, 
 * In cases when a library doesn't (yet) support GraalVM, the next best option is having configuration for it in the [GraalVM Reachability Metadata Repository](https://github.com/oracle/graalvm-reachability-metadata). It's a centralized repository where both maintainers and users can contribute and then reuse configuration for Native Image. It's integrated into [Native Build Tools](https://github.com/graalvm/native-build-tools) and now enabled by default, so as a user, again things just work.<br>
 For both of those options, a quick way to asses whether your dependencies work with Native Image is the ["Ready for Native Image"](https://www.graalvm.org/native-image/libraries-and-frameworks/) page. Note that this is a list of libraries that are *known* to be continuously testing with Native Image, and there are more compatible libraries out there; but this is a good first step for assessment. 
 * You can use framework support to produce custom “hints” for Native Image:
+
+
 ```java
-runtimeHints.resources().registerPattern(“config/app.properties”); //register a resource
+@RegisterReflectionForBinding(Clazz.class) // will register the annotated element for reflection
+```
+
+And for resources:
+
+```java
+    public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+        hints.resources().registerResource(new ClassPathResource("myresource.xml"));
+    }
+    //will register a resource
 ```
 
 * You can use the Tracing Agent to produce the necessary config [automatically](https://www.graalvm.org/latest/reference-manual/native-image/metadata/AutomaticMetadataCollection/).
