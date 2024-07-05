@@ -231,7 +231,7 @@ And for resources:
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
         hints.resources().registerResource(new ClassPathResource("myresource.xml"));
     }
-    //will register a resource
+    // will register a resource
 ```
 
 * Now if neither your library nor your framework support GraalVM, you can use the Tracing Agent that comes with Native Image to produce the necessary config [automatically](https://www.graalvm.org/latest/reference-manual/native-image/metadata/AutomaticMetadataCollection/). 
@@ -243,46 +243,28 @@ Some of those steps look rather scary, but if you are starting a new project, mo
 
 # Monitoring 📈
 
-Build an application with monitoring features enabled:
-
-```shell
-mvn -Pmonitored native:compile
-```
-This will trigger a profile with the following `buildArgs`: `--enable-monitoring=heapdump,jfr,jvmstat`. You can also opt for using just one of those monitoring features. 
-
-Let's start the app:
-
-```shell
-./target/demo-monitored
-```
-
-Now in another terminal tab let's start VisualVM (note that you can also `sdk install visualvm`, how cool is this!):
-
-```shell
-visualvm
-```
-
-And in a yet another terminal tab let's send some load to the app via `hey` (get it [here](https://github.com/rakyll/hey)):
-
-```shell
-hey -n=100000 http://localhost:8080/hello
-```
-
-You'll see that our application successfully operates and uses minimal resources even under load. 
-
-You can go even further and repeat the experiment but limiting the memory to let's say ridiculous 10 MB and the app will remain operational:
-
-```shell
-./target/demo-monitored -Xmx10M
-hey -n=100000 http://localhost:8080/hello
-```
+I want to talk about monitoring applications build with GraalVM, but this article is already getting out of hands, so this will have to be a topic of a different article, and I'll just mention it briefly. Native Image offers a number of monitoring features and protocols, such as jvmstat (which you can use with VisualVM), JFR, and heap dumps. Various monitoring and observability frameworks, such as for example Micrometer, as well as cloud vendors, also offer additional capabilties for monitoring GraalVM applications.
 
 # What's next for GraalVM
 
+What can be more exciting than the future! Let's talk about two big projects we are currently working on.
+
 ## Native Image Layers
 
-We want to introduce a brand new way of building and deploying Native Image applications. With Layers you'll be able to create native images that depend on one or more base images. Such application images are much faster to build compared with standalone images, providing an improved development experience. Moreover, base images can be shared not just across applications but potentially also across different operating system processes, which can reduce the overall memory footprint.
+We want to introduce a brand new way of building and deploying Native Image applications. With Layers you'll be able to create native images that depend on one or more base images. This way every time you recompile your application, you only need to recompile your user code, taking compilation times down to seconds. And the benefits don't end there – once deployed, applications can share the base images, reducing the resources consumption even further. How cool is that!  
 
-GraalOS
+## GraalOS
+
+We are working on a new deployment platform for Java applications, based on GraalVM Native Image. You'll get the same familiar benefits of Native Image — fast startup, low menory usage, high peak peroformance — and in addition to that we'll take care of scalability, isolation, leveraging the latest hardware features, and reducing costs. My favorite is "deploy applications, not containers" — we want to eliminate the overhead and additional efforts associated with containerization. Exciting times ahead!
 
 # Conculsion
+
+I hope this article encoruaged you to try Spring Boot and GraalVM. Together they will give you an easy way to build fast and lightweight applications with an access to anything you might need from the rich Spring ecosystem. 
+
+Here are a few helpful resources to keep learning about GraalVM:
+
+* https://www.graalvm.org
+* https://github.com/graalvm/graalvm-demos
+* https://alina-yur.github.io/graalvm-resources
+
+And if you have any questions or feedback, just ping me on social media. Now go build something with GraalVM!
