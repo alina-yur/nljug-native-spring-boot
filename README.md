@@ -31,15 +31,15 @@ Native Image compiles your Java application into a native executable with the fo
 * Additional security, by eliminating unused code and reducing the attack surface.
 
 
-## Spring AOT: Spring meets GraalVM 🤝
+## Spring AOT: Spring Meets GraalVM 🤝
 
-Now let's talk about Spring Boot, GraalVM, and how they come together. Spring Boot 3.0 introduced general availability of GraalVM Native Image in Spring projects, and here is how it works.
+Now let's talk about Spring Boot, GraalVM, and how they come together. Spring Boot 3.0 introduced the general availability of GraalVM Native Image in Spring projects, and here is how it works.
 
-By default Spring Boot works in a way that at runtime it pulls your project's source code and configuration from all the different sources, resolves it, and and creates an internal representation of your app. What's interesting, GraalVM Native Image does a very similar thing – it analyzes your code and configuration and creates an internal representation of your app – but it does this at build time. The Spring AOT engine was designed to bridge this gap between two worlds. It transforms your application configuration into native-friendly functional configuration and generates additional files to assist native compilation of Spring projects: 
-
+By default Spring Boot works in a way that at runtime it pulls your project's bytecode classes/jars and configuration from all the different sources, resolves it, and creates an internal representation of your application. Interestingly, GraalVM Native Image does something very similar — it analyzes your code and configuration and creates an internal representation of your application — but it does this at build time. The Spring AOT engine was designed to bridge this gap between two worlds. It transforms your application configuration into native-friendly functional configuration and generates additional files to assist native compilation of Spring projects:
 * Java source code (functional configuration)
-* Bytecode for things like dynamic proxies
-* Runtime hints for dynamic Java features when necessary (reflection, resources, etc). 
+* Bytecode for things such as dynamic proxies
+* Runtime hints for dynamic Java features when necessary (reflection, resources, and so on).
+
 
 
 ## Build a Native Spring Application
