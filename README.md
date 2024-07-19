@@ -41,7 +41,6 @@ By default Spring Boot works in a way that at runtime it pulls your project's by
 * Runtime hints for dynamic Java features when necessary (reflection, resources, and so on).
 
 
-
 ## Build a Native Spring Application
 
 Let's go to Josh Long's second favorite place — start.spring.io – and generate our project. The settings I chose are Spring Boot 3.3.1, Java 22, Maven, and my dependencies are Spring Web and GraalVM Native Image. That's all. Let's download and unpack our project, and add a `HelloController.java` so we have something to work with:
@@ -62,7 +61,7 @@ public class HelloController {
     
 }
 ```
-Guess what — we would also need GraalVM. The easiest way to install it with SDKMAN!. As I'm writing this article the latest released version is GraalVM for JDK 22, but we can also be cool and get the early access builds of GraalVM for JDK 23:
+Guess what — we would also need GraalVM. The easiest way to install it on Linux and macOS is with SDKMAN!. As I'm writing this article, the latest released version is GraalVM for JDK 22, but we can also be cool and get the early access builds of GraalVM for JDK 23:
 
 ```shell
 sdk install java 23.ea.9-graal
@@ -82,11 +81,11 @@ Started DemoApplication in 1.106 seconds (process running for 1.363)
 
 Navigate to `http://localhost:8080/hello` and you'll see our message. 
 
-So far so good, but where's fun in that! Let's compile it to native executable with GraalVM Native Image:
+So far so good, but where's fun in that? Let's compile it to native executable with GraalVM Native Image:
 
 ```mvn -Pnative native:compile```
 
-While this command looks simple on the surface, it invokes an elaborate process of analyzing your whole applications, pulling the configuration, finding the code that is reachable, snapshotting heap, and then optimizing and compiling. Look at the analysis step — even our fairly trivial app with two user classes (albeit also dependencies on Spring modules and JDK classes), has quite a few things inside:
+While this command looks simple on the surface, it invokes the  process of analyzing your whole application, pulling its configuration, discovering the code that is reachable, snapshotting the heap, and then optimizing and compiling. Look at the analysis step — even our fairly trivial app with two user classes (albeit also dependencies on Spring modules and JDK classes), contains quite a few things inside:
 
 ```shell
 [2/8] Performing analysis...  [*****]                                   (15.0s @ 1.53GB)
@@ -96,7 +95,7 @@ While this command looks simple on the surface, it invokes an elaborate process 
 ```
 
 
-On my fairly average Linux cloud instance (16 COU, 32 GB RAM) the build takes 1m 15s by default, and 46.7s with the quick build mode (`-Ob`). 
+On my fairly average Linux cloud instance (16 CPU, 32 GB RAM) the build takes 1m 15s by default, and 46.7s with the quick build mode (`-Ob`). 
 
 Now let's run our application:
 
@@ -109,19 +108,20 @@ Started DemoApplication in 0.048 seconds (process running for 0.051)
 
 ```
 
-Navigating to `http://localhost:8080/hello` gives us the same message, only now our application is much faster – it started in 48 miliseconds!
+Navigating to `http://localhost:8080/hello` gives us the same message, only now our application is much faster – it started in 48 milliseconds!
 
-We can also quickly assess the runtime characteristics of our application. The size of our application is 62MB, and measuring the runtime memory usage (RSS) while serving incoming requests load gives us 69 MB. How great is this!
+We can also quickly assess the runtime characteristics of our application. The size of our application is 62MB, and measuring the runtime memory usage (RSS) while serving incoming requests gives us 69 MB. How great is this!
 
 But let's explore performance more, and for that let's talk about specific performance optimizations in Native Image.
 
+
 ## Optimize performance
 
-You might say: ok, I can see how compiling my applications with Native Image is great for startup, memory usage, packaging size, but what about peak performance? Indeed, we know that the JVM monitors our application, profiles it, and adapts on the go to optimize the most frequently executed parts. And we said about Native Image compilation that runtime hasn't happened yet, so how can you oprimize for high peak performance? I'm glad you asked! Let's talk about profile-guided optimizations.
+You might say: “ok, I can see how compiling my applications with Native Image is great for startup, memory usage, packaging size, but what about peak performance?” Indeed, we know that at runtime the JVM monitors our application, profiles it, and adapts on the go to optimize the most frequently executed parts. And we said that Native Image compilation takes place before runtime, so how can you optimize for peak performance? I'm glad you asked! Let's talk about profile-guided optimizations.
 
 ### Profile-Guided Optimizations 🚀
 
-One of the most powerful performance optimizations in Native Image is profile-guided optimizations (PGO). You can build an instrumented version of your application, do a "training run" applying relevant workloads, and generate a profiles file that will be automatically picked up by Native Image to guide optimizations. This way you can combine the best of both worlds: **the runtime awareness of the JVM, and the powerful AOT optimizations of Native Image**. 
+One of the most powerful performance optimizations in Native Image is profile-guided optimizations (PGO). You can build an instrumented version of your application, do a "training run" applying relevant workloads, and generate a profile file that will be automatically picked up by Native Image to guide optimizations. In this way, you get the best of both worlds: **the runtime awareness of the JVM, and the powerful AOT optimizations of Native Image**.
 
 Let's build a PGO-optimized application. To follow along, you might to want to clone this related repo, as it comes with profiles and benchmarking scripts: https://github.com/alina-yur/nljug-native-spring-boot.
 
@@ -147,18 +147,18 @@ Let's look at other performance optimizations available in GraalVM Native Image,
 
 ### ML-enabled PGO 👩‍🔬
 
-The PGO approach described above, where the profiles are collected during a training run and tailored to your app, is the recommended way to do PGO in Native Image. 
+The PGO approach described above— where the profiles are collected during a training run and tailored to your app — is the recommended way to do PGO in Native Image.
 
-There can be situations though when collecting profiles is not possible – for example, because of your deployment process. In that case, it's still possible to get profiling information and optimize the app based on it via machine learning enabled PGO. Native Image contains a pre-trained ML model that predicts the probabilities of the control flow graph branches, which lets us additionally optimize the app. This is again available in Oracle GraalVM activates automatically in the absence of user-provided profiles. 
+However, there can be situations  when it’s not possible to collect profiles for example, because of your deployment process. In that case, it's still possible to get profiling information and optimize your app via machine-learning-enabled PGO. Native Image contains a pre-trained ML model that predicts the probabilities of control flow graph branches, which enables it to additionally optimize the app. This is again available in Oracle GraalVM: it activates automatically in the absence of user-provided profiles.
 
-If you are curious about the impact if this optimization, you can disable it with `-H:-MLProfileInference`. In our measurements, this optimization provides ~6% runtime performance improvement, which is pretty cool for an optimization you automatically get out of the box.
+If you are curious about the impact of this kind of optimization, you can disable it with `-H:-MLProfileInference`. In our measurements, this optimization provides ~6% runtime performance improvement, which is pretty cool for an optimization you automatically get out of the box.
 
 
 ### G1 GC 🧹
 
-There could be different GC strategies. The default GC in Native Image, Serial GC, can be beneficial in certain scenarios, for example if you have a short-lived application or want to optimize memory usage. 
+There are various GC implementations in Native Image. The default GC in Native Image, Serial GC, can be beneficial for example if you have a short-lived application or want to optimize memory usage.
 
-If you are aiming for the best peak throughput, it's always wirth to evaulate using the G1 GC (Note that you need Oracle GraalVM for it). 
+If you are aiming for the best peak throughput, Oracle GraalVM provides support for G1 GC. 
 
 In our `optimized` profile it's enabled via `<buildArg>--gc=G1</buildArg>`.
 
@@ -207,14 +207,16 @@ And in a visual form:
 ![Native Spring Boot metrics](native-sb-metrics-min.png "Native Spring web app memory and CPU usage")
 
 A few conclusions here:
-* Natively compiled applications can perform on par with the JVM! For the best throughput, use PGO, G1 GC and `-march=native`;
-* Applications have instant performance and can also be scaled to zero whenever needed;
-* We covered a few common perofmance metrics, but there are way more. 
-* Native Image applications use signficantly less memory than the JVM. You can easily reduce memory by 2x and keep the same throughput, or deploy 2 instances of the app for the memory footprint of one.
+* Natively compiled applications can perform on par with the JVM! For the best throughput, use PGO, G1 GC and `-march=native`.
+* Applications have instant performance and can also be scaled to zero whenever needed.
+* We covered a few common performance metrics, but there are way more.
+* An application produced by Native Image uses significantly less memory than the JVM. * You can easily reduce memory by ~2x and keep the same throughput, or deploy two instances of the app for the memory footprint of one.
 
-******
 
-Now that we have an app that starts fast, uses less memory, and has good peak performance, let's talk about building out our project. The very first step you will probably take (and the number one topic I'm being asked about) is using librabies in the native mode. And rightfully so — you will need to connect your application to a database, integrate with other systems, deploy and monitor your application. So let's talk about that.
+Note that our app is a good starting point, but since it does not yet perform any sophisticated logic, there is little for a compiler to show itself. As you begin to expand your project—reading and writing data from a database, adding libraries, and implementing your business logic—this is when the Graal compiler truly shines. In our measurements of a more complex benchmark example, Spring PetClinic, [AOT outperforms JIT](https://medium.com/graalvm/graalvm-for-jdk-21-is-here-ee01177dd12d#0df7) in terms of peak throughput, latency, and memory efficiency.
+
+Now that we have an app that starts fast, uses less memory, and has good peak performance, let's discuss building out our project. The very first step you will probably take (and the number one topic I'm asked about) is using libraries in the native mode. And rightfully so — you may need to connect your application to a database, integrate with other systems, deploy and monitor your application. So let's talk about that.
+
 
 
 ## Using dynamic Java features and 3rd party libraries
@@ -222,7 +224,7 @@ Now that we have an app that starts fast, uses less memory, and has good peak pe
  Native Image compiles applications ahead of time at build time. Since we need a complete picture of the app, compilation happens under a closed-world assumption: everything there is to know about your app, **needs to be known at build time**. Native Image's static analysis will try to make the best possible predictions about the runtime behavior of your application, but for those cases where it's not sufficient, you might need to provide configuration files to make things like reflection, resources, JNI, serialization, and proxies "visible" to Native Image. Note the word "configuration" doesn't mean that this is something that you need to do manually – let's look at all the many ways how this can work.
 
 * A library might be designed to be Native-Image friendly out of the box — this is obviously the ideal scanario:  twitter.com/YunaMorgenstern/status/1729039787351536084
-* If a library existed in pre-Native Image, it could need additional configuration to make things such as reflection work. Ideaylly, this configuration will be included withon the library itself — for example: [H2](https://github.com/h2database/h2database/blob/master/h2/src/main/META-INF/native-image/reflect-config.json). In this case no further action needed from a user – things just work.
+* If a library existed in pre-Native Image, it could need additional configuration to make things such as reflection work. Ideally, this configuration will be included withon the library itself — for example: [H2](https://github.com/h2database/h2database/blob/master/h2/src/main/META-INF/native-image/reflect-config.json). In this case no further action needed from a user – things just work.
 * In cases when a library doesn't (yet) support GraalVM, the next best option is having configuration for it in the [GraalVM Reachability Metadata Repository](https://github.com/oracle/graalvm-reachability-metadata). It's a centralized repository where both maintainers and users can contribute and then reuse configuration for Native Image. It's integrated into [Native Build Tools](https://github.com/graalvm/native-build-tools) and now enabled and pulled by default, so as a user, again — things just work.<br>
 For both of those options, a quick way to assess whether your dependencies work with Native Image is the ["Ready for Native Image"](https://www.graalvm.org/native-image/libraries-and-frameworks/) page. Note that this is a list of libraries that are *known* to be continuously testing with Native Image, and there are more compatible libraries out there; but this is a good first step for assessment.
 * If your library of interest doesn't provide any support for GraalVM, but you are using a framework version that has Native Image support, such in our case Spring Boot 3.0, you can use the framework support to produce custom “hints” for Native Image:
